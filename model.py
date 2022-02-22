@@ -1,5 +1,3 @@
-import typing
-
 from pygame.math import Vector2
 
 from data import Direction
@@ -37,32 +35,40 @@ class SnakeGameEngine(EventListener):
 
 
 class Snake(EventListener):
+    UP = Vector2(0, -1)
+    DOWN = Vector2(0, 1)
+    LEFT = Vector2(-1, 0)
+    RIGHT = Vector2(1, 0)
+    DIRECTION_MAP = {
+        Direction.UP: UP,
+        Direction.DOWN: DOWN,
+        Direction.LEFT: LEFT,
+        Direction.RIGHT: RIGHT
+    }
+
     def __init__(self, event_manager: EventManager, model: SnakeGameEngine, length=3):
         self.event_manager = event_manager
         self.event_manager.add_listener(self)
-        initial_position = Vector2(model.width / 2, model.height / 2)
-        self.body = []
+
+        self.direction = Snake.RIGHT
+
         self.scale = model.scale
-        for i in range(length):
-            self.body.append(initial_position + Vector2(i * model.scale, 0))
-        self.direction = Direction.RIGHT
+        initial_position = Vector2(model.width / 2, model.height / 2)
+        self.body = [initial_position + (Vector2(i, 0) * model.scale) for i in range(length)]
 
     def _on_event(self, event):
         if isinstance(event, MovementEvent):
-            self.direction = event.direction
+            self.change_direction(Snake.DIRECTION_MAP[event.direction])
             return
 
         if isinstance(event, TickEvent):
             self.move()
+            return
+
+    def change_direction(self, direction):
+        if direction != self.direction.rotate(180):
+            self.direction = direction
 
     def move(self):
-        for i in range(len(self.body) - 1, 0, -1):
-            self.body[i] = self.body[i - 1]
-        direction_vector_map = {
-            Direction.UP: Vector2(0, -1),
-            Direction.DOWN: Vector2(0, 1),
-            Direction.LEFT: Vector2(-1, 0),
-            Direction.RIGHT: Vector2(1, 0)
-        }
-        self.body[0] = self.body[0] + (direction_vector_map[self.direction] * self.scale)
-
+        self.body.pop(-1)
+        self.body.insert(0, self.body[0] + (self.direction * self.scale))
